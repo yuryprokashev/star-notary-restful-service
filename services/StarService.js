@@ -36,8 +36,6 @@ module.exports = class StarService {
         }
         this.windowService.closeWindow(address);
         this.signatureService.revokeSignature(address);
-        console.log(this.indexByAddress);
-        console.log(this.indexByBlockHash);
         return block;
     }
 
@@ -62,7 +60,6 @@ module.exports = class StarService {
         let heights;
         try {
             heights = await this.resolveHeightsForAddress(address);
-            console.log(heights);
             if(heights.length === 0) return blocks;
         } catch (e) {
             throw e;
@@ -81,7 +78,6 @@ module.exports = class StarService {
     async findStarByHash(hash) {
         try {
             let height = await this.resolveHeightForHash(hash);
-            console.log(height);
             let block = await this.blockService.getBlock(height);
             this.encoderDecoderService.decodeProperty(block, "body.star.story", "body.star.storyDecoded");
             return block;

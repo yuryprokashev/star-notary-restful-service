@@ -18,7 +18,6 @@ module.exports = class StarController {
 
     async getStarByQuery(request, response) {
         let query = new StarQuery(request.params.query);
-        console.log(query);
         if (!query.isValid()) return response.status(400).json({
             errors: `Star Query is invalid: must be either hash or address`
         });
