@@ -34,8 +34,14 @@ indexByAddress = level("./dbStarIndexByAddress");
 indexByHash = level("./dbStarIndexByHash");
 
 let blockService, validationWindowService, signatureService, encoderDecoderService, starService;
-
 blockService = new BlockService(blockDb);
+try {
+    blockService.init();
+} catch (e) {
+    console.log(e);
+    process.exit(1);
+}
+
 validationWindowService = new ValidationWindowService(VALIDATION_WINDOW_SIZE);
 signatureService = new SignatureService(validationWindowService);
 encoderDecoderService = new EncoderDecoderService();
