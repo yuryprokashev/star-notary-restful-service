@@ -21,7 +21,7 @@ module.exports = class SignatureService {
                 throw new Error(`Signature validation error: ${err.message}`);
             }
             let status = isSignatureValid ? "valid" : "invalid";
-            if(status) this.validSignatures.set(address, signature);
+            if(status === "valid") this.validSignatures.set(address, signature);
             setTimeout(() => {
                 _this.revokeSignature();
             }, validationWindow.validationWindow * 1000);
