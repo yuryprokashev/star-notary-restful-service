@@ -73,14 +73,12 @@ class Blockchain{
         }
     }
 
-    getBlock(blockHeight){
-        return new Promise((resolve, reject) => {
-            this.storage.getBlock(blockHeight).then(block => {
-                resolve(block);
-            }).catch(err => {
-                reject(new Error(`${err.message}`));
-            });
-        });
+    async getBlock(blockHeight){
+        try {
+            return await this.storage.getBlock(blockHeight);
+        } catch (e) {
+            throw e;
+        }
     }
 
     validateBlock(blockHeight){
