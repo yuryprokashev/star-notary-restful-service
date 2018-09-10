@@ -28,23 +28,18 @@ const app = express();
 const PORT = 8000;
 const VALIDATION_WINDOW_SIZE = 300; // seconds
 
-let blockDb = new BlockDb("./db/blocks");
-let indexByAddress, indexByHash;
+let blockDb, indexByAddress, indexByHash;
+blockDb = new BlockDb("./dbBlocks");
+indexByAddress = level("./dbStarIndexByAddress");
+indexByHash = level("./dbStarIndexByHash");
 
-try {
-    indexByAddress = level("./db/stars/indexByAddress");
-    indexByHash = level("./db/stars/indexByHash");
-} catch (e) {
-    console.log(e);
-    process.exit(1);
-}
+let blockService, validationWindowService, signatureService, encoderDecoderService, starService;
 
-
-let blockService = new BlockService(blockDb);
-let validationWindowService = new ValidationWindowService(VALIDATION_WINDOW_SIZE);
-let signatureService = new SignatureService(validationWindowService);
-let encoderDecoderService = new EncoderDecoderService();
-let starService = new StarService(
+blockService = new BlockService(blockDb);
+validationWindowService = new ValidationWindowService(VALIDATION_WINDOW_SIZE);
+signatureService = new SignatureService(validationWindowService);
+encoderDecoderService = new EncoderDecoderService();
+starService = new StarService(
     blockService,
     validationWindowService,
     signatureService,
@@ -52,11 +47,12 @@ let starService = new StarService(
     indexByAddress,
     indexByHash);
 
-let blockController = new BlockController(starService, blockService);
-let chainController = new ChainController(blockService);
-let validationWindowController = new ValidationWindowController(validationWindowService);
-let signatureController = new SignatureController(signatureService);
-let starController = new StarController(starService);
+let blockController, chainController, validationWindowController, signatureController, starController;
+blockController = new BlockController(starService, blockService);
+chainController = new ChainController(blockService);
+validationWindowController = new ValidationWindowController(validationWindowService);
+signatureController = new SignatureController(signatureService);
+starController = new StarController(starService);
 
 app.use(bodyParser.json()); // for parsing application/json
 app.use(bodyParser.urlencoded({ extended: true })); // for parsing application/x-www-form-urlencoded
