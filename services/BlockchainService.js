@@ -14,16 +14,21 @@ const timeStamp = require('../utils/timeStamp');
 class Blockchain{
     constructor(db){
         this.storage = db;
-        db.isEmpty().then(result => {
-            if(result) {
+        this.genesisBlock = new Block("First block in the chain - Genesis block");
+    }
+
+    async init() {
+        try {
+            let isEmpty = await this.storage.isEmpty();
+            if(isEmpty) {
                 console.log("Blockchain DB is empty. Creating new Blockchain with 1 genesis block...");
-                this.addBlock(new Block("First block in the chain - Genesis block"));
+                return await this.addBlock(this.genesisBlock);
             } else {
                 console.log("Blockchain DB has blocks. Reading Blockchain from DB...");
             }
-        }).catch(err => {
-            throw err;
-        });
+        } catch (e) {
+            throw e;
+        }
     }
 
     addBlock(blockData){
