@@ -10,7 +10,6 @@ const SHA256 = require('crypto-js/sha256');
 const Block = require('../model/Block');
 
 const timeStamp = require('../utils/timeStamp');
-// TODO remove async code from constructor
 class Blockchain{
     constructor(db){
         this.storage = db;
@@ -31,37 +30,39 @@ class Blockchain{
         }
     }
 
-    addBlock(blockData){
-        let _this = this;
+    async addBlock(blockData){
+        let previousBlock, chainLength;
+        // creating new Block from blockData.
         let newBlock = new Block(blockData);
-        return new Promise((resolve, reject) => {
-            newBlock.time = timeStamp();
-            _this.storage.getChainLength().then(chainLength => {
-                newBlock.height = chainLength;
-                if(chainLength === 0) {
-                    return new Promise((resolve, reject) => {
-                        console.log("chain length = 0, return null instead of block");
-                        resolve(null);
-                    });
-                } else {
-                    console.log(`chain length is ${chainLength}, return previous block`);
-                    return _this.storage.getBlock(chainLength - 1);
-                }
-            }).then(previousBlock => {
-                if(previousBlock === null) {
-                    newBlock.previousBlockHash = "";
-                } else {
-                    newBlock.previousBlockHash = previousBlock.hash;
-                }
-                newBlock.hash = SHA256(JSON.stringify(newBlock)).toString();
-                return _this.storage.saveBlock(newBlock);
-            }).then(saveOperationResult => {
-                console.log("block saved");
-                resolve(saveOperationResult);
-            }).catch(err => {
-                reject(new Error(`${err.message}`));
-            });
-        });
+        // timestamping the new Block with current time.
+        newBlock.time = timeStamp();
+        // getting current chain length.
+        try{
+            chainLength = await this.storage.getChainLength();
+        } catch (e) {
+            throw e;
+        }
+        // new Block height is equal to the current ChainLength.
+        newBlock.height = chainLength;
+        // getting the hash of the previous Block in Blockchain to assign it to new Block.
+        if(chainLength === 0) {
+            newBlock.previousBlockHash = "";
+        } else {
+            try {
+                previousBlock = await this.storage.getBlock(chainLength - 1);
+                newBlock.previousBlockHash = previousBlock.hash;
+            } catch (e) {
+                throw e;
+            }
+        }
+        // calculating new Block hash right before saving it to Blockchain.
+        newBlock.hash = SHA256(JSON.stringify(newBlock)).toString();
+        // saving the new Block to Blockchain.
+        try {
+            return await this.storage.saveBlock(newBlock);
+        } catch (e) {
+            throw e;
+        }
     }
 
     getBlockHeight() {
