@@ -65,15 +65,12 @@ class Blockchain{
         }
     }
 
-    getBlockHeight() {
-        let _this = this;
-        return new Promise((resolve, reject) => {
-            _this.storage.getChainLength().then(currentLength => {
-                resolve(currentLength);
-            }).catch(err => {
-                reject(new Error(`${err.message}`));
-            });
-        });
+    async getBlockHeight() {
+        try {
+            return await this.storage.getChainLength()
+        } catch (e) {
+            throw e;
+        }
     }
 
     getBlock(blockHeight){
