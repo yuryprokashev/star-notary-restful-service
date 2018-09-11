@@ -81,50 +81,48 @@ class Blockchain{
         }
     }
 
-    validateBlock(blockHeight){
-        let _this = this;
-        return new Promise(function(resolve, reject){
-            _this.storage.getBlock(blockHeight).then(block => {
-                let blockHash = block.hash;
-                block.hash = '';
-                let validBlockHash = SHA256(JSON.stringify(block)).toString();
-                if (blockHash === validBlockHash) {
-                    resolve(true);
-                } else {
-                    reject(new Error('Block #'+blockHeight+' invalid hash:\n'+blockHash+'<>'+validBlockHash));
-                }
-            });
-        });
+    async validateBlock(blockHeight){
+        try{
+            // getting Block at given height;
+            let block = await this.storage.getBlock(blockHeight);
+            // storing its hash in local variable for further comparison.
+            let blockHash = block.hash;
+            // removing current hash from the Block.
+            block.hash = "";
+            // now calculate hash of the Block without its hash. It is the hash value, that we obtain before this block was saved to Blockshain.
+            let validBlockHash = SHA256(JSON.stringify(block)).toString();
+            // now compare the current block hash, stored in blockHash variable, with valid hash.
+            if(blockHash === validBlockHash) return true;
+            throw new Error('Block #'+blockHeight+' invalid hash:\n'+blockHash+'<>'+validBlockHash);
+        } catch (e) {
+            throw e;
+        }
     }
 
-    validateChain() {
+    async validateChain() {
         let errors = [];
-        let _this = this;
-        return new Promise((resolve, reject) => {
-            _this.storage.getChainLength()
-                .then(currentLength => {
-                    let allBlockValidations = [];
-                    for(let i = 0; i < currentLength; i++) {
-                        allBlockValidations.push(
-                            _this.validateBlock(i)
-                                .catch(err => {
-                                    errors.push(err);
-                                })
-                        );
-                    }
-                    return Promise.all(allBlockValidations);
-                })
-                .then(value => {
-                    if(errors.length > 0) {
-                        reject(errors);
-                    } else {
-                        resolve(true);
-                    }
-                })
-                .catch(err => {
-                    reject(err.message);
-                });
-        });
+        let chainLength;
+        let allBlockValidations = [];
+        try {
+            chainLength = await this.storage.getChainLength();
+        } catch (e) {
+            throw e;
+        }
+
+        for(let i = 0; i < chainLength; i++) {
+            try {
+                let blockValidationPromise = await this.validateBlock(i);
+                allBlockValidations.push(blockValidationPromise);
+            } catch (e) {
+                errors.push(e);
+            }
+        }
+
+        if(errors.length > 0) {
+            return errors;
+        } else {
+            return true;
+        }
     }
 
     async getBlocksForHeights(heights) {
@@ -137,6 +135,10 @@ class Blockchain{
         } catch (e) {
             throw e;
         }
+    }
+
+    getChain() {
+        return this.storage;
     }
 }
 

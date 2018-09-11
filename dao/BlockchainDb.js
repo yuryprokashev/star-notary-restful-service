@@ -63,4 +63,7 @@ module.exports = class BlockchainDb {
             });
         });
     }
+    getDb() {
+        return this.db;
+    }
 };
