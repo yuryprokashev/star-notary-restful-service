@@ -9,14 +9,15 @@ module.exports = class BlockController {
         this.starService = starService;
         this.blockService = blockService;
     }
-    getBlockByHeight(request, response) {
+    async getBlockByHeight(request, response) {
         let height = request.params.blockHeight;
         let blockPromise = this.blockService.getBlock(height);
-        blockPromise.then(block => {
-            response.send(block);
-        }).catch(err => {
-            response.status(StatusCodes.BAD_REQUEST).json({error: err.message});
-        });
+        try {
+            let block = await this.blockService.getBlock(height);
+            response.json(block);
+        } catch (e) {
+            response.status(StatusCodes.BAD_REQUEST).json({errors: e.message});
+        }
     };
     //TODO update README about the error text and conditions.
     async postBlock(request, response) {
