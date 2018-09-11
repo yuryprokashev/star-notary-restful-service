@@ -87,7 +87,9 @@ module.exports = class StarService {
     }
 
     async findStarByHeight(height) {
-        return await this.blockService.getBlock(height);
+        let block = await this.blockService.getBlock(height);
+        this.encoderDecoderService.decodeProperty(block, "body.star.story", "body.star.storyDecoded");
+        return block;
     }
 
     async resolveHeightsForAddress(address) {
