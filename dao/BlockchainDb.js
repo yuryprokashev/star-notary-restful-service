@@ -1,38 +1,28 @@
-/**
- * Created by py on 01/09/2018.
- */
-
 const level = require('level');
 
 module.exports = class BlockchainDb {
     constructor(dbDir) {
         this.db = level(dbDir);
     }
-    saveBlock(block) {
-        let _this = this;
+    async saveBlock(block) {
         let key = block.height;
-        return new Promise(function(resolve, reject) {
-            _this.db.put(key, JSON.stringify(block), function(err){
-                if(err) {
-                    reject(new Error(`Block ${key} submission failed. ${err.message}`));
-                }
-                resolve(block);
-            })
-        });
+        let value = JSON.stringify(block);
+        try {
+            await this.getDb().put(key, value);
+            return block;
+        } catch (e) {
+            throw e;
+        }
     }
-    getBlock(key) {
-        let _this = this;
-        return new Promise(function(resolve, reject) {
-            _this.db.get(key, function(err, value) {
-                if(err) {
-                    reject(new Error(`Can not get Block at key = ${key}. ${err.message}`));
-                } else {
-                    resolve(JSON.parse(value));
-                }
-            });
-        });
+    async getBlock(key) {
+        try {
+            let value = await this.getDb().get(key);
+            return JSON.parse(value);
+        } catch (e) {
+            throw e;
+        }
     }
-    getChainLength() {
+    async getChainLength() {
         let _this = this;
         return new Promise(function(resolve, reject){
             let length = 0;
@@ -48,19 +38,15 @@ module.exports = class BlockchainDb {
                 });
         });
     }
-    isEmpty() {
-        let _this = this;
-        return new Promise(function (resolve, reject) {
-            let length = _this.getChainLength();
-            length.then(result => {
-                if(result === 0) {
-                    resolve(true);
-                } else {
-                    resolve(false);
-                }
-            }).catch(err => {
-                reject(new Error(`Can not determine, if DB is empty. ${err.message}`));
-            });
-        });
+    async isEmpty() {
+        try {
+            let chainLength = await this.getChainLength();
+            return chainLength === 0;
+        } catch (e) {
+            throw e;
+        }
+    }
+    getDb() {
+        return this.db;
     }
 };

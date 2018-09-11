@@ -10,7 +10,6 @@ const SHA256 = require('crypto-js/sha256');
 const Block = require('../model/Block');
 
 const timeStamp = require('../utils/timeStamp');
-// TODO remove async code from constructor
 class Blockchain{
     constructor(db){
         this.storage = db;
@@ -31,104 +30,99 @@ class Blockchain{
         }
     }
 
-    addBlock(blockData){
-        let _this = this;
+    async addBlock(blockData){
+        let previousBlock, chainLength;
+        // creating new Block from blockData.
         let newBlock = new Block(blockData);
-        return new Promise((resolve, reject) => {
-            newBlock.time = timeStamp();
-            _this.storage.getChainLength().then(chainLength => {
-                newBlock.height = chainLength;
-                if(chainLength === 0) {
-                    return new Promise((resolve, reject) => {
-                        console.log("chain length = 0, return null instead of block");
-                        resolve(null);
-                    });
-                } else {
-                    console.log(`chain length is ${chainLength}, return previous block`);
-                    return _this.storage.getBlock(chainLength - 1);
-                }
-            }).then(previousBlock => {
-                if(previousBlock === null) {
-                    newBlock.previousBlockHash = "";
-                } else {
-                    newBlock.previousBlockHash = previousBlock.hash;
-                }
-                newBlock.hash = SHA256(JSON.stringify(newBlock)).toString();
-                return _this.storage.saveBlock(newBlock);
-            }).then(saveOperationResult => {
-                console.log("block saved");
-                resolve(saveOperationResult);
-            }).catch(err => {
-                reject(new Error(`${err.message}`));
-            });
-        });
+        // timestamping the new Block with current time.
+        newBlock.time = timeStamp();
+        // getting current chain length.
+        try{
+            chainLength = await this.storage.getChainLength();
+        } catch (e) {
+            throw e;
+        }
+        // new Block height is equal to the current ChainLength.
+        newBlock.height = chainLength;
+        // getting the hash of the previous Block in Blockchain to assign it to new Block.
+        if(chainLength === 0) {
+            newBlock.previousBlockHash = "";
+        } else {
+            try {
+                previousBlock = await this.storage.getBlock(chainLength - 1);
+                newBlock.previousBlockHash = previousBlock.hash;
+            } catch (e) {
+                throw e;
+            }
+        }
+        // calculating new Block hash right before saving it to Blockchain.
+        newBlock.hash = SHA256(JSON.stringify(newBlock)).toString();
+        // saving the new Block to Blockchain.
+        try {
+            return await this.storage.saveBlock(newBlock);
+        } catch (e) {
+            throw e;
+        }
     }
 
-    getBlockHeight() {
-        let _this = this;
-        return new Promise((resolve, reject) => {
-            _this.storage.getChainLength().then(currentLength => {
-                resolve(currentLength);
-            }).catch(err => {
-                reject(new Error(`${err.message}`));
-            });
-        });
+    async getBlockHeight() {
+        try {
+            return await this.storage.getChainLength()
+        } catch (e) {
+            throw e;
+        }
     }
 
-    getBlock(blockHeight){
-        return new Promise((resolve, reject) => {
-            this.storage.getBlock(blockHeight).then(block => {
-                resolve(block);
-            }).catch(err => {
-                reject(new Error(`${err.message}`));
-            });
-        });
+    async getBlock(blockHeight){
+        try {
+            return await this.storage.getBlock(blockHeight);
+        } catch (e) {
+            throw e;
+        }
     }
 
-    validateBlock(blockHeight){
-        let _this = this;
-        return new Promise(function(resolve, reject){
-            _this.storage.getBlock(blockHeight).then(block => {
-                let blockHash = block.hash;
-                block.hash = '';
-                let validBlockHash = SHA256(JSON.stringify(block)).toString();
-                if (blockHash === validBlockHash) {
-                    resolve(true);
-                } else {
-                    reject(new Error('Block #'+blockHeight+' invalid hash:\n'+blockHash+'<>'+validBlockHash));
-                }
-            });
-        });
+    async validateBlock(blockHeight){
+        try{
+            // getting Block at given height;
+            let block = await this.storage.getBlock(blockHeight);
+            // storing its hash in local variable for further comparison.
+            let blockHash = block.hash;
+            // removing current hash from the Block.
+            block.hash = "";
+            // now calculate hash of the Block without its hash. It is the hash value, that we obtain before this block was saved to Blockshain.
+            let validBlockHash = SHA256(JSON.stringify(block)).toString();
+            // now compare the current block hash, stored in blockHash variable, with valid hash.
+            if(blockHash === validBlockHash) return true;
+            throw new Error('Block #'+blockHeight+' invalid hash:\n'+blockHash+'<>'+validBlockHash);
+        } catch (e) {
+            throw e;
+        }
     }
 
-    validateChain() {
+    async validateChain() {
         let errors = [];
-        let _this = this;
-        return new Promise((resolve, reject) => {
-            _this.storage.getChainLength()
-                .then(currentLength => {
-                    let allBlockValidations = [];
-                    for(let i = 0; i < currentLength; i++) {
-                        allBlockValidations.push(
-                            _this.validateBlock(i)
-                                .catch(err => {
-                                    errors.push(err);
-                                })
-                        );
-                    }
-                    return Promise.all(allBlockValidations);
-                })
-                .then(value => {
-                    if(errors.length > 0) {
-                        reject(errors);
-                    } else {
-                        resolve(true);
-                    }
-                })
-                .catch(err => {
-                    reject(err.message);
-                });
-        });
+        let chainLength;
+        let allBlockValidations = [];
+        try {
+            chainLength = await this.storage.getChainLength();
+        } catch (e) {
+            throw e;
+        }
+
+        for(let i = 0; i < chainLength; i++) {
+            try {
+                let blockValidationPromise = await this.validateBlock(i);
+                allBlockValidations.push(blockValidationPromise);
+            } catch (e) {
+                errors.push(e);
+            }
+        }
+
+        if(errors.length > 0) {
+            return errors;
+        } else {
+            return true;
+        }
     }
 
     async getBlocksForHeights(heights) {
@@ -141,6 +135,10 @@ class Blockchain{
         } catch (e) {
             throw e;
         }
+    }
+
+    getChain() {
+        return this.storage;
     }
 }
 
