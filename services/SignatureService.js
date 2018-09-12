@@ -1,7 +1,10 @@
 const bitcoin = require('bitcoinjs-lib');
 const bitcoinMessage = require('bitcoinjs-message');
-const SignatureValidationStatus = require('../controllers/SignatureValidationStatus');
+const SignatureValidationStatus = require('../controllers/responses/SignatureValidationStatus');
+const Signature = require('../controllers/requests/Signature');
 const timeStamp = require('../utils/timeStamp');
+const BusinessLogicError = require('./BusinessLogicError');
+const InvalidInputError = require('../controllers/InvalidInputError');
 
 module.exports = class SignatureService {
     constructor(validationWindowService) {
@@ -18,7 +21,7 @@ module.exports = class SignatureService {
             try {
                 isSignatureValid = bitcoinMessage.verify(message, address, signature);
             } catch (err) {
-                throw new Error(`Signature validation error: ${err.message}`);
+                throw new InvalidInputError(`Signature validation error: ${err.message}`);
             }
             let status = isSignatureValid ? "valid" : "invalid";
             if(status === "valid") this.validSignatures.set(address, signature);
@@ -27,7 +30,7 @@ module.exports = class SignatureService {
             }, validationWindow.validationWindow * 1000);
             return new SignatureValidationStatus(validationWindow, "registerStar", status);
         } else {
-            throw new Error(`Validation window for ${address} has expired`);
+            throw new BusinessLogicError(`Validation window for ${address} does not exist. Open new validation window.`);
         }
     }
 

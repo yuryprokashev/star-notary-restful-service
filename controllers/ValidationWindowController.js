@@ -1,16 +1,19 @@
-const StatusCodes = require("./StatusCodes");
+const Controller = require('./Controller');
+const WalletAddress = require("./requests/WalletAddress");
 
-module.exports = class ValidationWindowController {
+module.exports = class ValidationWindowController extends Controller {
     constructor(validationWindowService) {
+        super();
         this.validationWindowService = validationWindowService;
     }
-    openValidationWindow(request, response) {
-        let address = request.body.address;
-        if(address === undefined) response.status(StatusCodes.BAD_REQUEST).json({
-            error: "address can not be empty"
-        }); else {
-            let validationWindow = this.validationWindowService.createValidationWindow(address);
-            response.json(validationWindow);
+    async openValidationWindow(request, response) {
+        let address = new WalletAddress(request.body.address);
+        try {
+            address.isValid();
+            let validationWindow = await this.validationWindowService.createValidationWindow(address.get());
+            return response.json(validationWindow);
+        } catch (e) {
+            this.onError(e, response);
         }
     }
 };

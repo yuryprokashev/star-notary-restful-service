@@ -1,33 +1,31 @@
-const StarQuery = require('./StarQuery');
-module.exports = class StarController {
+const StarQuery = require('./requests/StarQuery');
+const Controller = require('./Controller');
+const BlockHeight = require('./requests/BlockHeight');
+
+module.exports = class StarController extends Controller {
     constructor(starService) {
+        super();
         this.starService = starService;
     }
     async getBlockByHeight(request, response) {
-        let height = request.params.blockHeight;
-        if(request.params.blockHeight === undefined) return response.status(400).json({
-            error: "Block Height is undefined"
-        });
+        let height = new BlockHeight(request.params.blockHeight);
         try {
-            let block = await this.starService.findStarByHeight(height);
+            height.isValid();
+            let block = await this.starService.findStarByHeight(height.get());
             response.json(block);
-        } catch (err) {
-            response.status(429).json(err);
+        } catch (e) {
+            this.onError(e, response);
         }
     }
 
     async getStarByQuery(request, response) {
         let query = new StarQuery(request.params.query);
-        if (!query.isValid()) return response.status(400).json({
-            errors: `Star Query is invalid: must be either hash or address`
-        });
         try {
-            let blocks = await this.starService.findStarsByQuery(query);
+            let queryType = query.resolveQueryType();
+            let blocks = await this.starService.findStarsByQuery(queryType, query);
             response.json(blocks);
-        } catch (err) {
-            response.status(422).json({
-                errors: err.message
-            });
+        } catch (e) {
+            this.onError(e, response);
         }
     }
 };
