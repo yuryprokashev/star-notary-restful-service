@@ -20,6 +20,4 @@ module.exports = class SignatureController extends Controller {
             this.onError(err, response);
         }
     }
-
-    }
 };
