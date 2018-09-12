@@ -65,7 +65,7 @@ const del = require("del");
             } else if(chainIsValid.length > 0) {
                 console.log("printing validation errors\n");
                 chainIsValid.forEach(error => {
-                    console.log(error.message);
+                    console.log(error.userMessages);
                 });
             }
         } catch(e) {
