@@ -6,46 +6,47 @@ module.exports = class EncoderDecoderService {
         this.decoder = new StringDecoder('ascii');
     }
     encodeProperty(object, sourcePropertyPath, encodedPropertyPath) {
-        let targetPropertyValue = this.resolveTargetPropertyValue(object, sourcePropertyPath);
+        let targetPropertyValue = this._resolveTargetPropertyValue(object, sourcePropertyPath);
         let endcodedTargetProperty = Buffer.from(targetPropertyValue, 'ascii').toString('hex');
 
-        let targetChildObject = this.resolveTargetChildObject(object, encodedPropertyPath);
-        let targetPropertyKey = this.resolvePropertyNames(encodedPropertyPath).pop();
+        let targetChildObject = this._resolveTargetChildObject(object, encodedPropertyPath);
+        let targetPropertyKey = this._resolvePropertyNames(encodedPropertyPath).pop();
         targetChildObject[targetPropertyKey] = endcodedTargetProperty;
         return object;
     }
 
     decodeProperty(object, sourcePropertyPath, decodedPropertyPath) {
-        let targetPropertyValue = this.resolveTargetPropertyValue(object, sourcePropertyPath);
+        let targetPropertyValue = this._resolveTargetPropertyValue(object, sourcePropertyPath);
         let decodedTargetProperty = this.decoder.write(Buffer.from(targetPropertyValue, "hex"));
 
-        let targetChildObject = this.resolveTargetChildObject(object, decodedPropertyPath);
-        let targetPropertyKey = this.resolvePropertyNames(decodedPropertyPath).pop();
+        let targetChildObject = this._resolveTargetChildObject(object, decodedPropertyPath);
+        let targetPropertyKey = this._resolvePropertyNames(decodedPropertyPath).pop();
         targetChildObject[targetPropertyKey] = decodedTargetProperty;
         return object;
     }
-    resolvePropertyNames(propertyPath) {
+
+    _resolvePropertyNames(propertyPath) {
         return propertyPath.split(".");
     }
 
-    resolveObjectPropertyReference(obj, propertyName) {
+    _resolveObjectPropertyReference(obj, propertyName) {
         return obj[propertyName];
     }
-    resolveTargetPropertyValue(obj, propertyPath) {
+    _resolveTargetPropertyValue(obj, propertyPath) {
         let targetPropertyValue = obj;
-        let propertyNames = this.resolvePropertyNames(propertyPath);
+        let propertyNames = this._resolvePropertyNames(propertyPath);
         propertyNames.forEach(name => {
-            targetPropertyValue = this.resolveObjectPropertyReference(targetPropertyValue, name);
+            targetPropertyValue = this._resolveObjectPropertyReference(targetPropertyValue, name);
         });
         return targetPropertyValue;
     }
 
-    resolveTargetChildObject(obj, propertyPath) {
+    _resolveTargetChildObject(obj, propertyPath) {
         let targetChildObject = obj;
-        let propertyNames = this.resolvePropertyNames(propertyPath);
+        let propertyNames = this._resolvePropertyNames(propertyPath);
         propertyNames.pop();
         propertyNames.forEach(name => {
-            targetChildObject = this.resolveObjectPropertyReference(targetChildObject, name);
+            targetChildObject = this._resolveObjectPropertyReference(targetChildObject, name);
         });
         return targetChildObject;
     }

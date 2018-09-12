@@ -8,10 +8,10 @@ module.exports = class RestApiErrorFactory {
         this.errorTypeToStatusCodeMap = new Map();
     }
     create(error) {
-        let statusCode = this.resolveErrorTypeToStatusCode(error);
+        let statusCode = this._resolveErrorTypeToStatusCode(error);
         return new RestApiError(statusCode, error.userMessages);
     }
-    resolveErrorTypeToStatusCode(error){
+    _resolveErrorTypeToStatusCode(error){
         if(error instanceof InvalidInputError) {
             return StatusCodes.BAD_REQUEST;
         } else if(error instanceof BusinessLogicError) {
