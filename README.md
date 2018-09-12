@@ -9,33 +9,29 @@
 1. [LevelDB 4.0.0+](https://github.com/Level/level)
 2. [Crypto.js 3.1.9-1+](https://www.npmjs.com/package/crypto-js)
 3. [Express.js 4.0.0+](https://expressjs.com/)
-4. [BitcoinJS-Message](https://www.npmjs.com/package/bitcoinjs-message)
-
-# Test using Postman
-1. [Use the Postman collection in this repo](./tests/Blockchain_Nanodegree_Project_3.postman_collection.json)
-(Collection v2.1, Postman v6.2.4).
-2. Import this file to your Postman application.
-3. Open Collection Runner
-4. Choose 'Blockchain Nanodegree' collection.
-5. Click Run.
+4. [BitcoinJS-Message 2.0.0+](https://www.npmjs.com/package/bitcoinjs-message)
 
 # Project Features
 ## Star Registration using Bitcoin Wallet Address
-Client can not register new Star before he had proven his identity.
+Client can register new Star only when he had proven his identity.
 To prove his identity, Client needs to:
 1. Open Validation Window by sending wallet address to `POST /requestValidation`.
 The response will contain the message, that Client needs to sign with his
 wallet address.
 2. Verify signature of the message to `POST /message-signature/validate`.
 The response will contain the the signature validity information.
-3. When signature is valid, Client may send the Star information to `POST /block`.
+3. When signature is valid, Client may register the Star
+be sending its date to `POST /block`.
 
 ## Star Lookup by Block Height, Block Hash or Wallet Address
 Client can fetch the information about the registered Stars using
 three different endpoints:
-1. By Height of the Block, where Star were registered: `GET /block/{blockHeight}`
-2. By Hash of the Block, where Star were registered: `GET /stars/hash:{blockHash}`
-3. By Wallet Address, which was used to register the Star: `GET /stars/address:{walletAddress}`
+1. By Height of the Block, where Star were registered:
+ `GET /block/{blockHeight}`
+2. By Hash of the Block, where Star were registered:
+ `GET /stars/hash:{blockHash}`
+3. By Wallet Address, which was used to register the Star:
+ `GET /stars/address:{walletAddress}`
 
 # REST API Documentation
 Base Path for API is `/`.
@@ -48,9 +44,12 @@ Opens Validation Window for the Wallet Address, provided in the request body.
 
 Response contains message, that Client must sign with his walletAddress.
 
-Validation Window is 300 seconds long. It will be closed after 300 seconds, if not used.
+Validation Window is 300 seconds long. It will be closed after 300 seconds,
+if not used.
 
-It will also be closed immediately after the Star is registered.
+It will also be closed immediately after the Star is registered. So
+Client may have only one open Validation Window open for one Wallet
+Address at a time.
 ### Request
 #### Example
 ```
@@ -88,7 +87,7 @@ Returns representation of created Validation Window in Response body.
 This error is returned in case the body of the request does not have required parameters.
 
 ##### Examples
-###### Request body is missing the `address` field or it is empty string.
+###### Request body does not have the `address` field or this field is an empty string.
 ```
 {
     "errors": [
@@ -96,7 +95,7 @@ This error is returned in case the body of the request does not have required pa
     ]
 }
 ```
-###### Request body has `address` property, but it is wrong length.
+###### Request body has `address` field, but this field has wrong length.
 ```
 {
     "errors": [
@@ -175,7 +174,7 @@ __IMPORTANT!__ Request body is validated prior to check for open Validation Wind
     ]
 }
 ```
-###### Request body has both `address` and `signature`, but the are wrongly formatted
+###### Request body has both `address` and `signature`, but both fields have wrong format
 ```
 {
     "errors": [
@@ -187,9 +186,9 @@ __IMPORTANT!__ Request body is validated prior to check for open Validation Wind
 
 #### Unprocessable Entity
 ##### Description
-This error is returned, in two cases:
-1. Client forgot to open the Validation Window
-2. Client opened validation window but it has expired
+This error is returned in two cases:
+1. Client has forgot to open the Validation Window
+2. Client had opened validation window but it has expired
 
 Status code is 422.
 
@@ -206,7 +205,7 @@ Response body has `errors: String[]` property.
 ## POST /block
 ### Description
 Allows to append new Block with custom data to Blockchain. Star registration data and walletAddress will be appended to the new Block.
-Each new Star registration appends new Block.
+Each new Star registration appends a new Block to the Blockchain.
 ### Request
 #### Example
 ```
@@ -215,7 +214,7 @@ curl -X POST \
   -H 'Cache-Control: no-cache' \
   -H 'Content-Type: application/json' \
   -d '{
-  "address": "{{walletAddress}}",
+  "address": "15KneztcfrTFRnZGHc8PhjEgoZsP62VHwQ",
   "star": {
     "dec": "-26° 29'\'' 24.9",
     "ra": "16h 29m 1.0s",
@@ -281,7 +280,7 @@ or when required parameters are wrongly formatted.
 __IMPORTANT!__ Request body is validated prior to checks for open Validation Window
 and verified message Signature.
 ##### Examples
-###### Request body is missing the `address` field or it is empty string.
+###### Request body does not have `address` field or this field is an empty string.
 ```
 {
     "errors": [
@@ -302,9 +301,9 @@ and verified message Signature.
 #### Unprocessable Entity
 ##### Description
 This error is returned in two cases, when Client tries to register the Star.
-1. Client forgot to open the Validation Window
-2. Client opened validation window but forgot to verify the message
-3. Client opened validation window, verified the message, but signature status returned is 'invalid'
+1. Client has forgot to open the Validation Window
+2. Client had opened validation window but has forgot to verify the message
+3. Client had opened validation window, tried to verify the message, but signature status returned is 'invalid'
 
 Status code is 422.
 
@@ -328,7 +327,9 @@ Response body has `errors: String[]` property.
 
 ## GET /block/{blockHeight}
 ### Description
-Allows to read block information by its height. Block body contains information about Star, that was registered in this Block.
+Allows to read block information by its height.
+
+Returned Block body contains information about Star, that was registered in this Block.
 ### Request
 #### Example
 ```
@@ -339,6 +340,8 @@ curl -X GET \
 ```
 #### Path parameter:`blockHeight: Number`
 Provides the height of the block to be read.
+
+When block height is beyond the length of the Blockchain, then error is returned.
 
 ### Successful Response
 #### Description
@@ -383,7 +386,9 @@ Response body has `errors: String[]` property.
 
 ## GET /stars/hash:{blockHash}
 ### Description
-Allows to read Block with Star by Blocks' hash. Block body contains information about Star, that was registered in this Block.
+Allows to read Block with Star by Blocks' hash.
+
+Returned Block body contains information about Star, that was registered in this Block.
 ### Request
 #### Example
 ```
@@ -440,7 +445,7 @@ Response body has `errors: String[]` property.
 ### Description
 Allows to read all Blocks with Stars by wallet address, that was used to register them.
 
-Returns array of Blocks.
+Returns an array of Blocks for provided wallet address.
 
 Each Block body contains information about Star, that was registered in this Block.
 ### Request
@@ -451,7 +456,7 @@ curl -X GET \
   -H 'Cache-Control: no-cache' \
 ```
 #### Path parameter:`walletAddress: String`
-Provides the wallet address used for Star registrations.
+The wallet address used for Star registrations.
 
 `walletAddress` is `String` with strict 34 chars length.
 
