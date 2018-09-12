@@ -1,25 +1,17 @@
-/**
- * Created by py on 02/09/2018.
- */
-
-module.exports = class ChainController {
+const Controller = require('./Controller');
+const Chain = require("./responses/Chain");
+module.exports = class ChainController extends Controller {
     constructor(blockService) {
+        super();
         this.blockService = blockService;
     }
-    getChain(request, response) {
-        let heightPromise = this.blockService.getBlockHeight();
-        let validChainPromise = this.blockService.validateChain();
-        Promise.all([heightPromise, validChainPromise])
-            .then(values => {
-                response.json({
-                    height: values[0],
-                    isValid: values[1]
-                });
-            })
-            .catch(err => {
-                response.json({
-                    error: err.message
-                });
-            });
+    async getChain(request, response) {
+        try {
+            let height = await this.blockService.getBlockHeight();
+            let isValid = await this.blockService.validateChain();
+            response.json(new Chain(height, isValid));
+        } catch (e) {
+            this.onError(e);
+        }
     }
 };

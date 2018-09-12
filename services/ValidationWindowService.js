@@ -1,12 +1,11 @@
 const timeStamp = require('../utils/timeStamp');
-const ValidationWindow = require('../controllers/ValidationWindow');
+const ValidationWindow = require('../controllers/responses/ValidationWindow');
 
 module.exports = class ValidationWindowService {
     constructor(validationWindowSize) {
         this.windows = new Map();
         this.validationWindowSize = validationWindowSize || 60;
     }
-    //TODO handle the case, when window for key already exists.
     createValidationWindow(key) {
         let _this = this;
         let walletAddress = key;

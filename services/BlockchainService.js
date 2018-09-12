@@ -10,7 +10,11 @@ const SHA256 = require('crypto-js/sha256');
 const Block = require('../model/Block');
 
 const timeStamp = require('../utils/timeStamp');
-class Blockchain{
+
+const BusinessLogicError = require('./BusinessLogicError');
+
+class BlockchainService {
+
     constructor(db){
         this.storage = db;
         this.genesisBlock = new Block("First block in the chain - Genesis block");
@@ -93,7 +97,7 @@ class Blockchain{
             let validBlockHash = SHA256(JSON.stringify(block)).toString();
             // now compare the current block hash, stored in blockHash variable, with valid hash.
             if(blockHash === validBlockHash) return true;
-            throw new Error('Block #'+blockHeight+' invalid hash:\n'+blockHash+'<>'+validBlockHash);
+            throw new BusinessLogicError('Block #'+blockHeight+' invalid hash:\n'+blockHash+'<>'+validBlockHash);
         } catch (e) {
             throw e;
         }
@@ -142,4 +146,4 @@ class Blockchain{
     }
 }
 
-module.exports = Blockchain;
+module.exports = BlockchainService;

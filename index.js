@@ -1,9 +1,6 @@
 /**
  *Created by py on 01/09/2018
  */
-    //    TODO When Done With Project. Add 400 and 429 Errors.
-    //    TODO When Done With Project. Refactor to async/await instead of Promises
-    //    TODO When Done With Project. Move base error responding and successful responding to Controller class
 const express = require('express');
 const bodyParser = require('body-parser');
 
@@ -41,7 +38,6 @@ try {
     console.log(e);
     process.exit(1);
 }
-
 validationWindowService = new ValidationWindowService(VALIDATION_WINDOW_SIZE);
 signatureService = new SignatureService(validationWindowService);
 encoderDecoderService = new EncoderDecoderService();
@@ -64,15 +60,10 @@ app.use(bodyParser.json()); // for parsing application/json
 app.use(bodyParser.urlencoded({ extended: true })); // for parsing application/x-www-form-urlencoded
 
 app.post(Resources.BLOCKS, blockController.postBlock.bind(blockController));
-
 app.get(Resources.CHAINS, chainController.getChain.bind(chainController));
-
 app.post(Resources.VALIDATION_WINDOW, validationWindowController.openValidationWindow.bind(validationWindowController));
-
 app.post(Resources.SIGNATURES, signatureController.postSignature.bind(signatureController));
-
 app.get(Resources.STARS_BY_QUERY, starController.getStarByQuery.bind(starController));
-
 app.get(Resources.BLOCK_BY_HEIGHT, starController.getBlockByHeight.bind(starController));
 
 app.listen(PORT, () => {

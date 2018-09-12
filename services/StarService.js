@@ -1,4 +1,6 @@
 const level = require('level');
+const BusinessLogicError = require('./BusinessLogicError');
+const InvalidInputError = require('../controllers/InvalidInputError');
 
 module.exports = class StarService {
     constructor(blockService,
@@ -24,42 +26,56 @@ module.exports = class StarService {
             this.encoderDecoderService.encodeProperty(requestBody, "star.story", "star.story");
             try {
                 block = await this.blockService.addBlock(requestBody);
-                await this.addBlockToAddressIndex(block, address);
-                await this.addBlockToHashIndex(block);
+                await this._addBlockToAddressIndex(block, address);
+                await this._addBlockToHashIndex(block);
             } catch (err) {
-                throw err;
+                throw new BusinessLogicError(err.message);
             }
         } else if(!isWindowValid) {
-            throw new Error("Star registration needs open Validation Window. It is closed now.");
+            throw new BusinessLogicError("Star registration needs open Validation Window. It is closed now.");
         } else if(!isSignatureValid) {
-            throw new Error("Star registration needs valid signature. No valid signature found.");
+            throw new BusinessLogicError("Star registration needs valid signature. No valid signature found.");
         }
         this.windowService.closeWindow(address);
         this.signatureService.revokeSignature(address);
         return block;
     }
 
-    async findStarsByQuery(query) {
-        if(query.isAddress()) {
+    async findStarsByQuery(queryType, query) {
+        if(queryType === "hash") {
+            let hash = query.resolveToHash(query);
             try{
-                return await this.findStarsByAddress(query.resolveToAddress())
+                return await this._findStarByHash(hash);
             } catch (e) {
-                throw e;
+                throw new BusinessLogicError(e.message);
             }
-        } else if(query.isHash()) {
+        } else if(queryType === "address") {
+            let address = query.resolveToAddress();
             try {
-                return await this.findStarByHash(query.resolveToHash());
+                return await this._findStarsByAddress(address);
             } catch (e) {
-                throw e;
+                throw new BusinessLogicError(e.message);
             }
+        } else {
+            throw new InvalidInputError(`${query} type is invalid. Address or Hash are expected.`);
         }
     }
 
-    async findStarsByAddress(address) {
+    async findStarByHeight(height) {
+        try {
+            let block = await this.blockService.getBlock(height);
+            this.encoderDecoderService.decodeProperty(block, "body.star.story", "body.star.storyDecoded");
+            return block;
+        } catch (e) {
+            throw new BusinessLogicError(e.message);
+        }
+    }
+
+    async _findStarsByAddress(address) {
         let blocks = [];
         let heights;
         try {
-            heights = await this.resolveHeightsForAddress(address);
+            heights = await this._resolveHeightsForAddress(address);
             if(heights.length === 0) return blocks;
         } catch (e) {
             throw e;
@@ -75,9 +91,9 @@ module.exports = class StarService {
         }
     }
 
-    async findStarByHash(hash) {
+    async _findStarByHash(hash) {
         try {
-            let height = await this.resolveHeightForHash(hash);
+            let height = await this._resolveHeightForHash(hash);
             let block = await this.blockService.getBlock(height);
             this.encoderDecoderService.decodeProperty(block, "body.star.story", "body.star.storyDecoded");
             return block;
@@ -86,13 +102,7 @@ module.exports = class StarService {
         }
     }
 
-    async findStarByHeight(height) {
-        let block = await this.blockService.getBlock(height);
-        this.encoderDecoderService.decodeProperty(block, "body.star.story", "body.star.storyDecoded");
-        return block;
-    }
-
-    async resolveHeightsForAddress(address) {
+    async _resolveHeightsForAddress(address) {
         try {
             return JSON.parse(await this.indexByAddress.get(address));
         } catch (e) {
@@ -100,7 +110,7 @@ module.exports = class StarService {
         }
     }
 
-    async resolveHeightForHash(hash) {
+    async _resolveHeightForHash(hash) {
         try {
             return JSON.parse(await this.indexByBlockHash.get(hash));
         } catch (e) {
@@ -108,7 +118,7 @@ module.exports = class StarService {
         }
     };
 
-    async addBlockToAddressIndex(block, address) {
+    async _addBlockToAddressIndex(block, address) {
         let heights;
         try {
             heights = JSON.parse(await this.indexByAddress.get(address));
@@ -123,7 +133,7 @@ module.exports = class StarService {
         }
     }
 
-    async addBlockToHashIndex(block) {
+    async _addBlockToHashIndex(block) {
         try {
             await this.indexByBlockHash.put(block.hash, JSON.stringify(block.height));
         } catch (e) {
