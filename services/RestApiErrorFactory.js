@@ -1,6 +1,7 @@
 const RestApiError = require('../controllers/responses/RestApiError');
 const InvalidInputError = require('../controllers/InvalidInputError');
 const BusinessLogicError = require('./BusinessLogicError');
+const StatusCodes = require('./StatusCodes');
 
 module.exports = class RestApiErrorFactory {
     constructor(){
@@ -12,11 +13,11 @@ module.exports = class RestApiErrorFactory {
     }
     resolveErrorTypeToStatusCode(error){
         if(error instanceof InvalidInputError) {
-            return 400;
+            return StatusCodes.BAD_REQUEST;
         } else if(error instanceof BusinessLogicError) {
-            return 422;
+            return StatusCodes.UNPROCESSABLE_ENTITY;
         } else {
-            return 500;
+            return StatusCodes.INTERNAL_SERVER_ERROR;
         }
     }
 };
