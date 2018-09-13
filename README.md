@@ -47,9 +47,14 @@ Response contains message, that Client must sign with his walletAddress.
 Validation Window is 300 seconds long. It will be closed after 300 seconds,
 if not used.
 
-It will also be closed immediately after the Star is registered. So
+Validation Window will also be closed immediately after the Star is registered. So
 Client may have only one open Validation Window open for one Wallet
 Address at a time.
+
+Multiple requests to open the Validation Window, that are sent within 300 seconds,
+will receive the same Validation Window object back. The `validationWindow`
+property will decrease with each request sent.
+
 ### Request
 #### Example
 ```
