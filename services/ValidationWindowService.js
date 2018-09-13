@@ -9,6 +9,8 @@ module.exports = class ValidationWindowService {
     createValidationWindow(key) {
         let _this = this;
         let walletAddress = key;
+        if(this.isWindowValid(walletAddress)) return this.getValidationWindow(walletAddress);
+
         let requestTimestamp = timeStamp();
         let message = `${walletAddress}:${requestTimestamp}:starRegistry`;
         let validationWindow = new ValidationWindow(walletAddress, requestTimestamp, message, this.validationWindowSize);
